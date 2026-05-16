@@ -73,4 +73,4 @@ def like(id):
     return {"ok": True}
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(port=5024,debug=True)
