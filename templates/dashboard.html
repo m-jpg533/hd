@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>AI Security Dashboard</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+
+    background:#0f1117;
+
+    color:white;
+
+    font-family:sans-serif;
+
+    overflow-x:hidden;
+}
+
+/* ===== Header ===== */
+.header{
+
+    width:100%;
+
+    padding:20px;
+
+    background:#161b22;
+
+    position:sticky;
+
+    top:0;
+
+    z-index:999;
+
+    border-bottom:1px solid #333;
+}
+
+.header h1{
+
+    font-size:28px;
+}
+
+/* ===== Grid ===== */
+.grid{
+
+    display:grid;
+
+    grid-template-columns:
+    repeat(auto-fit,minmax(250px,1fr));
+
+    gap:20px;
+
+    padding:20px;
+}
+
+/* ===== Card ===== */
+.card{
+
+    background:#161b22;
+
+    padding:25px;
+
+    border-radius:20px;
+
+    box-shadow:
+    0 0 20px rgba(0,0,0,0.4);
+
+    transition:0.3s;
+}
+
+.card:hover{
+
+    transform:translateY(-5px);
+}
+
+.card h2{
+
+    font-size:18px;
+
+    margin-bottom:15px;
+
+    color:#8b949e;
+}
+
+.number{
+
+    font-size:42px;
+
+    font-weight:bold;
+}
+
+/* ===== Attack Logs ===== */
+.logs{
+
+    padding:20px;
+}
+
+.logs h2{
+
+    margin-bottom:20px;
+}
+
+table{
+
+    width:100%;
+
+    border-collapse:collapse;
+
+    background:#161b22;
+
+    border-radius:20px;
+
+    overflow:hidden;
+}
+
+th,td{
+
+    padding:15px;
+
+    border-bottom:1px solid #333;
+
+    text-align:left;
+
+    font-size:14px;
+}
+
+th{
+
+    background:#21262d;
+}
+
+/* ===== Attack Colors ===== */
+.bad{
+
+    color:#ff4d4d;
+
+    font-weight:bold;
+}
+
+.good{
+
+    color:#00ff99;
+}
+
+/* ===== Mobile ===== */
+@media(max-width:768px){
+
+    .number{
+
+        font-size:32px;
+    }
+
+    th,td{
+
+        font-size:12px;
+
+        padding:10px;
+    }
+}
+
+</style>
+
+</head>
+
+<body>
+
+<!-- ===== Header ===== -->
+
+<div class="header">
+
+```
+<h1>
+🛡️ AI Security Dashboard
+</h1>
+```
+
+</div>
+
+<!-- ===== Stats ===== -->
+
+<div class="grid">
+
+```
+<div class="card">
+
+    <h2>🌐 總流量</h2>
+
+    <div class="number"
+    id="total">
+    0
+    </div>
+
+</div>
+
+<div class="card">
+
+    <h2>🚨 攻擊次數</h2>
+
+    <div class="number bad"
+    id="attacks">
+    0
+    </div>
+
+</div>
+
+<div class="card">
+
+    <h2>💀 XSS</h2>
+
+    <div class="number bad"
+    id="xss">
+    0
+    </div>
+
+</div>
+
+<div class="card">
+
+    <h2>🔥 SQL Injection</h2>
+
+    <div class="number bad"
+    id="sqli">
+    0
+    </div>
+
+</div>
+```
+
+</div>
+
+<!-- ===== Logs ===== -->
+
+<div class="logs">
+
+```
+<h2>
+📜 即時攻擊紀錄
+</h2>
+
+<table>
+
+    <thead>
+
+        <tr>
+
+            <th>IP</th>
+
+            <th>Path</th>
+
+            <th>Attack</th>
+
+            <th>Time</th>
+
+        </tr>
+
+    </thead>
+
+    <tbody id="logTable">
+
+    </tbody>
+
+</table>
+```
+
+</div>
+
+<script>
+
+/* ===== 載入統計 ===== */
+async function loadSecurity(){
+
+    const r = await fetch(
+        "/api/security"
+    )
+
+    const data = await r.json()
+
+    document.getElementById(
+        "total"
+    ).innerText = data.total
+
+    document.getElementById(
+        "attacks"
+    ).innerText = data.attacks
+
+    document.getElementById(
+        "xss"
+    ).innerText = data.xss
+
+    document.getElementById(
+        "sqli"
+    ).innerText = data.sqli
+}
+
+/* ===== 載入 Logs ===== */
+async function loadLogs(){
+
+    const r = await fetch(
+        "/api/logs"
+    )
+
+    const data = await r.json()
+
+    const table =
+    document.getElementById(
+        "logTable"
+    )
+
+    table.innerHTML = ""
+
+    data.forEach(log => {
+
+        const tr =
+        document.createElement("tr")
+
+        tr.innerHTML = `
+
+        <td>${log.ip}</td>
+
+        <td>${log.path}</td>
+
+        <td class="bad">
+        ${log.attack || "-"}
+        </td>
+
+        <td>${log.time}</td>
+
+        `
+
+        table.appendChild(tr)
+
+    })
+
+}
+
+/* ===== 自動更新 ===== */
+setInterval(()=>{
+
+    loadSecurity()
+
+    loadLogs()
+
+},3000)
+
+loadSecurity()
+
+loadLogs()
+
+</script>
+
+</body>
+</html>
