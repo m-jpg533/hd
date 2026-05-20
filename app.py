@@ -21,12 +21,9 @@ app = Flask(__name__)
 # Upload
 # =========================
 UPLOAD_FOLDER = "static/videos"
-
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
-
-os.makedirs(
-    UPLOAD_FOLDER,
-    exist_ok=True
 )
 
 # =========================
