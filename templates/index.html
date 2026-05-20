@@ -1,135 +1,577 @@
+
 <!DOCTYPE html>
 <html lang="zh-Hant">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Short Video</title>
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>TikTok Secure</title>
 
 <style>
 
-body{
+*{
     margin:0;
-    background:black;
-    overflow:hidden;
-    font-family:sans-serif;
+    padding:0;
+    box-sizing:border-box;
 }
 
+body{
+
+    background:black;
+
+    font-family:sans-serif;
+
+    overflow:hidden;
+}
+
+/* ===== 主容器 ===== */
 .container{
+
     height:100vh;
+
     overflow-y:scroll;
+
     scroll-snap-type:y mandatory;
 }
 
+/* ===== 每頁 ===== */
 .page{
-    height:100vh;
-    scroll-snap-align:start;
+
     position:relative;
+
+    width:100%;
+
+    height:100vh;
+
+    scroll-snap-align:start;
+
+    background:black;
 }
 
+/* ===== 影片 ===== */
 video{
+
     width:100%;
+
     height:100%;
+
     object-fit:cover;
+
+    background:black;
 }
 
-.overlay{
-    position:absolute;
-    top:0;
-    left:0;
-    width:100%;
-    height:100%;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    color:white;
-    background:rgba(0,0,0,0.3);
-    cursor:pointer;
-    font-size:18px;
-}
-
+/* ===== 右側按鈕 ===== */
 .actions{
+
     position:absolute;
-    right:10px;
+
+    right:12px;
+
     bottom:120px;
+
+    z-index:999;
+
     color:white;
-    font-size:22px;
+
+    text-align:center;
 }
 
-form{
-    position:fixed;
-    top:10px;
-    left:10px;
-    z-index:9999;
-    background:white;
+.btn{
+
+    margin-bottom:20px;
+
+    font-size:28px;
+
+    cursor:pointer;
+
+    user-select:none;
+}
+
+/* ===== 留言區 ===== */
+.comments{
+
+    position:absolute;
+
+    bottom:0;
+
+    left:0;
+
+    width:100%;
+
+    padding:15px;
+
+    background:rgba(0,0,0,0.5);
+
+    color:white;
+
+    z-index:999;
+}
+
+.comments input{
+
+    width:70%;
+
     padding:10px;
+
+    border:none;
+
     border-radius:10px;
+
+    outline:none;
+}
+
+.comments button{
+
+    padding:10px 15px;
+
+    border:none;
+
+    border-radius:10px;
+
+    background:#ff0050;
+
+    color:white;
+
+    cursor:pointer;
+}
+
+/* ===== 上傳 ===== */
+.uploadBox{
+
+    position:fixed;
+
+    top:10px;
+
+    left:10px;
+
+    z-index:9999;
+
+    background:rgba(0,0,0,0.5);
+
+    padding:10px;
+
+    border-radius:12px;
+}
+
+.uploadBox input{
+
+    color:white;
+}
+
+.uploadBox button{
+
+    padding:8px 12px;
+
+    border:none;
+
+    border-radius:10px;
+
+    background:#00cc66;
+
+    color:white;
+
+    cursor:pointer;
+}
+
+/* ===== 音量提示 ===== */
+.soundText{
+
+    position:absolute;
+
+    top:50%;
+
+    left:50%;
+
+    transform:translate(-50%,-50%);
+
+    color:white;
+
+    font-size:22px;
+
+    background:rgba(0,0,0,0.5);
+
+    padding:12px 20px;
+
+    border-radius:15px;
+
+    z-index:999;
+
+    pointer-events:none;
 }
 
 </style>
+
 </head>
 
 <body>
 
-<!-- 上傳 -->
-<form action="/api/upload" method="post" enctype="multipart/form-data">
-    <input type="file" name="video">
-    <button>上傳</button>
-</form>
+<!-- ===== 上傳 ===== -->
+<div class="uploadBox">
 
-<!-- 影片容器 -->
-<div class="container" id="container"></div>
+    <input
+    type="file"
+    id="uploadVideo">
+
+    <button onclick="uploadVideo()">
+
+        上傳
+
+    </button>
+
+</div>
+
+<!-- ===== 影片區 ===== -->
+<div
+class="container"
+id="container">
+
+</div>
 
 <script>
 
-/* ===== 讀影片 ===== */
-fetch("/api/videos")
-.then(r => r.json())
-.then(data => {
+/* =========================
+載入影片
+========================= */
+async function loadVideos(){
 
-    const container = document.getElementById("container");
+    const res =
+    await fetch("/api/videos")
+
+    const data =
+    await res.json()
+
+    const container =
+    document.getElementById(
+        "container"
+    )
+
+    container.innerHTML = ""
 
     data.forEach(v => {
 
-        const div = document.createElement("div");
-        div.className = "page";
+        const div =
+        document.createElement("div")
+
+        div.className = "page"
 
         div.innerHTML = `
-            <video class="vid" muted autoplay loop playsinline>
-                <source src="${v.url}">
-            </video>
 
-            <div class="overlay">點一下開聲音</div>
+        <video
+        class="video"
+        src="${v.url}"
+        autoplay
+        loop
+        muted
+        playsinline>
+        </video>
 
-            <div class="actions">
-                ❤️ ${v.likes}
-                <br>
-                ID ${v.id}
+        <div class="soundText">
+
+            🔊 點一下開聲音
+
+        </div>
+
+        <div class="actions">
+
+            <div
+            class="btn"
+            onclick="likeVideo(${v.id},this)">
+
+                ❤️
+                <div>${v.likes}</div>
+
             </div>
-        `;
 
-        container.appendChild(div);
+            <div
+            class="btn"
+            onclick="shareVideo(${v.id})">
 
-    });
+                📤
 
-    /* ===== 點擊開聲音 ===== */
-    const videos = document.querySelectorAll(".vid");
-    const overlays = document.querySelectorAll(".overlay");
+            </div>
 
-    overlays.forEach((ov, i) => {
+            <div
+            class="btn"
+            onclick="deleteVideo(${v.id})">
 
-        ov.addEventListener("click", () => {
+                🗑️
 
-            videos[i].muted = false;
-            videos[i].play();
+            </div>
 
-            ov.style.display = "none";
+        </div>
 
-        });
+        <div class="comments">
 
-    });
+            <input
+            id="comment-${v.id}"
+            placeholder="留言...">
 
-});
+            <button
+            onclick="sendComment(${v.id})">
+
+                送出
+
+            </button>
+
+        </div>
+
+        `
+
+        container.appendChild(div)
+
+    })
+
+    autoPlay()
+
+}
+
+/* =========================
+自動播放
+========================= */
+function autoPlay(){
+
+    const videos =
+    document.querySelectorAll(
+        "video"
+    )
+
+    const observer =
+    new IntersectionObserver(
+
+        entries => {
+
+            entries.forEach(entry => {
+
+                const video =
+                entry.target
+
+                if(entry.isIntersecting){
+
+                    video.play()
+
+                }else{
+
+                    video.pause()
+
+                }
+
+            })
+
+        },
+
+        {
+            threshold:0.7
+        }
+
+    )
+
+    videos.forEach(v => {
+
+        observer.observe(v)
+
+    })
+
+}
+
+/* =========================
+點影片開聲
+========================= */
+document.addEventListener(
+"click",
+e => {
+
+    const page =
+    e.target.closest(".page")
+
+    if(!page) return
+
+    const video =
+    page.querySelector("video")
+
+    const text =
+    page.querySelector(".soundText")
+
+    video.muted =
+    !video.muted
+
+    video.play()
+
+    if(video.muted){
+
+        text.innerHTML =
+        "🔇 已靜音"
+
+    }else{
+
+        text.innerHTML =
+        "🔊 已開聲"
+
+    }
+
+    text.style.display =
+    "block"
+
+    setTimeout(() => {
+
+        text.style.display =
+        "none"
+
+    },1000)
+
+})
+
+/* =========================
+按讚
+========================= */
+async function likeVideo(
+id,
+el
+){
+
+    const res =
+    await fetch(
+        "/api/like/"+id
+    )
+
+    const data =
+    await res.json()
+
+    el.innerHTML = `
+    ❤️
+    <div>${data.likes}</div>
+    `
+
+}
+
+/* =========================
+留言
+========================= */
+async function sendComment(id){
+
+    const input =
+    document.getElementById(
+        "comment-"+id
+    )
+
+    const text =
+    input.value
+
+    if(!text) return
+
+    await fetch(
+        "/api/comment/"+id,
+        {
+            method:"POST",
+
+            headers:{
+                "Content-Type":
+                "application/json"
+            },
+
+            body:JSON.stringify({
+                text:text
+            })
+        }
+    )
+
+    input.value = ""
+
+    alert("留言成功")
+
+}
+
+/* =========================
+分享
+========================= */
+function shareVideo(id){
+
+    const url =
+    location.origin+
+    "/video/"+id
+
+    navigator.clipboard
+    .writeText(url)
+
+    alert("已複製分享連結")
+
+}
+
+/* =========================
+刪除影片
+========================= */
+async function deleteVideo(id){
+
+    if(!confirm("確定刪除？"))
+    return
+
+    await fetch(
+        "/api/delete/"+id
+    )
+
+    loadVideos()
+
+}
+
+/* =========================
+上傳影片
+========================= */
+async function uploadVideo(){
+
+    const file =
+    document.getElementById(
+        "uploadVideo"
+    ).files[0]
+
+    if(!file){
+
+        alert("請選影片")
+
+        return
+    }
+
+    const form =
+    new FormData()
+
+    form.append(
+        "video",
+        file
+    )
+
+    const res =
+    await fetch(
+        "/api/upload",
+        {
+            method:"POST",
+
+            body:form
+        }
+    )
+
+    const data =
+    await res.json()
+
+    if(data.ok){
+
+        alert("上傳成功")
+
+        loadVideos()
+
+    }else{
+
+        alert(data.error)
+
+    }
+
+}
+
+/* =========================
+初始化
+========================= */
+loadVideos()
 
 </script>
 
