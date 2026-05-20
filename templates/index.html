@@ -6,29 +6,23 @@
 
 <meta charset="UTF-8">
 
-<meta name="viewport"
+<meta
+name="viewport"
 content="width=device-width, initial-scale=1.0">
 
-<title>TikTok Secure</title>
+<title>HD Shorts</title>
 
 <style>
 
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-}
-
 body{
 
+    margin:0;
     background:black;
-
     font-family:sans-serif;
-
     overflow:hidden;
+
 }
 
-/* ===== 主容器 ===== */
 .container{
 
     height:100vh;
@@ -36,23 +30,19 @@ body{
     overflow-y:scroll;
 
     scroll-snap-type:y mandatory;
+
 }
 
-/* ===== 每頁 ===== */
 .page{
-
-    position:relative;
-
-    width:100%;
 
     height:100vh;
 
+    position:relative;
+
     scroll-snap-align:start;
 
-    background:black;
 }
 
-/* ===== 影片 ===== */
 video{
 
     width:100%;
@@ -62,84 +52,33 @@ video{
     object-fit:cover;
 
     background:black;
+
 }
 
-/* ===== 右側按鈕 ===== */
 .actions{
 
     position:absolute;
 
-    right:12px;
+    right:15px;
 
-    bottom:120px;
-
-    z-index:999;
+    bottom:130px;
 
     color:white;
 
-    text-align:center;
+    font-size:22px;
+
+    z-index:10;
+
 }
 
-.btn{
-
-    margin-bottom:20px;
-
-    font-size:28px;
+.likeBtn{
 
     cursor:pointer;
 
-    user-select:none;
+    font-size:30px;
+
 }
 
-/* ===== 留言區 ===== */
-.comments{
-
-    position:absolute;
-
-    bottom:0;
-
-    left:0;
-
-    width:100%;
-
-    padding:15px;
-
-    background:rgba(0,0,0,0.5);
-
-    color:white;
-
-    z-index:999;
-}
-
-.comments input{
-
-    width:70%;
-
-    padding:10px;
-
-    border:none;
-
-    border-radius:10px;
-
-    outline:none;
-}
-
-.comments button{
-
-    padding:10px 15px;
-
-    border:none;
-
-    border-radius:10px;
-
-    background:#ff0050;
-
-    color:white;
-
-    cursor:pointer;
-}
-
-/* ===== 上傳 ===== */
 .uploadBox{
 
     position:fixed;
@@ -150,57 +89,24 @@ video{
 
     z-index:9999;
 
-    background:rgba(0,0,0,0.5);
+    background:rgba(0,0,0,0.7);
 
     padding:10px;
 
-    border-radius:12px;
+    border-radius:10px;
+
 }
 
-.uploadBox input{
+button{
 
-    color:white;
-}
-
-.uploadBox button{
-
-    padding:8px 12px;
+    padding:10px 15px;
 
     border:none;
 
-    border-radius:10px;
-
-    background:#00cc66;
-
-    color:white;
+    border-radius:8px;
 
     cursor:pointer;
-}
 
-/* ===== 音量提示 ===== */
-.soundText{
-
-    position:absolute;
-
-    top:50%;
-
-    left:50%;
-
-    transform:translate(-50%,-50%);
-
-    color:white;
-
-    font-size:22px;
-
-    background:rgba(0,0,0,0.5);
-
-    padding:12px 20px;
-
-    border-radius:15px;
-
-    z-index:999;
-
-    pointer-events:none;
 }
 
 </style>
@@ -209,49 +115,44 @@ video{
 
 <body>
 
-<!-- ===== 上傳 ===== -->
 <div class="uploadBox">
 
-    <input
-    type="file"
-    id="uploadVideo">
+<form id="uploadForm">
 
-    <button onclick="uploadVideo()">
+<input
+type="file"
+name="video"
+accept="video/mp4,video/webm,video/quicktime">
 
-        上傳
+<button type="submit">
 
-    </button>
+上傳影片
+
+</button>
+
+</form>
 
 </div>
 
-<!-- ===== 影片區 ===== -->
 <div
 class="container"
 id="container">
-
 </div>
 
 <script>
 
-/* =========================
-載入影片
-========================= */
 async function loadVideos(){
 
-    const res =
-    await fetch("/api/videos")
+    const r = await fetch("/api/videos")
 
-    const data =
-    await res.json()
+    const data = await r.json()
 
     const container =
-    document.getElementById(
-        "container"
-    )
+    document.getElementById("container")
 
     container.innerHTML = ""
 
-    data.forEach(v => {
+    data.forEach(v=>{
 
         const div =
         document.createElement("div")
@@ -261,61 +162,29 @@ async function loadVideos(){
         div.innerHTML = `
 
         <video
-        class="video"
         src="${v.url}"
         autoplay
-        loop
         muted
-        playsinline>
+        loop
+        playsinline
+        controls>
         </video>
-
-        <div class="soundText">
-
-            🔊 點一下開聲音
-
-        </div>
 
         <div class="actions">
 
             <div
-            class="btn"
-            onclick="likeVideo(${v.id},this)">
+            class="likeBtn"
+            onclick="likeVideo(${v.id})">
 
-                ❤️
-                <div>${v.likes}</div>
-
-            </div>
-
-            <div
-            class="btn"
-            onclick="shareVideo(${v.id})">
-
-                📤
+            ❤️
 
             </div>
 
-            <div
-            class="btn"
-            onclick="deleteVideo(${v.id})">
+            <div id="like-${v.id}">
 
-                🗑️
+            ${v.likes}
 
             </div>
-
-        </div>
-
-        <div class="comments">
-
-            <input
-            id="comment-${v.id}"
-            placeholder="留言...">
-
-            <button
-            onclick="sendComment(${v.id})">
-
-                送出
-
-            </button>
 
         </div>
 
@@ -325,253 +194,85 @@ async function loadVideos(){
 
     })
 
-    autoPlay()
-
 }
 
-/* =========================
-自動播放
-========================= */
-function autoPlay(){
+loadVideos()
 
-    const videos =
-    document.querySelectorAll(
-        "video"
-    )
+// ======================
+// 上傳
+// ======================
 
-    const observer =
-    new IntersectionObserver(
+document
+.getElementById("uploadForm")
+.addEventListener("submit",
 
-        entries => {
+async e=>{
 
-            entries.forEach(entry => {
+    e.preventDefault()
 
-                const video =
-                entry.target
+    const formData = new FormData(e.target)
 
-                if(entry.isIntersecting){
+    try{
 
-                    video.play()
+        const r = await fetch(
 
-                }else{
+            "/api/upload",
 
-                    video.pause()
+            {
 
-                }
+                method:"POST",
 
-            })
+                body:formData
 
-        },
+            }
 
-        {
-            threshold:0.7
+        )
+
+        const text = await r.text()
+
+        console.log(text)
+
+        const data = JSON.parse(text)
+
+        if(data.ok){
+
+            alert("上傳成功")
+
+            loadVideos()
+
+        }else{
+
+            alert(data.error)
+
         }
 
-    )
+    }catch(err){
 
-    videos.forEach(v => {
+        console.log(err)
 
-        observer.observe(v)
-
-    })
-
-}
-
-/* =========================
-點影片開聲
-========================= */
-document.addEventListener(
-"click",
-e => {
-
-    const page =
-    e.target.closest(".page")
-
-    if(!page) return
-
-    const video =
-    page.querySelector("video")
-
-    const text =
-    page.querySelector(".soundText")
-
-    video.muted =
-    !video.muted
-
-    video.play()
-
-    if(video.muted){
-
-        text.innerHTML =
-        "🔇 已靜音"
-
-    }else{
-
-        text.innerHTML =
-        "🔊 已開聲"
+        alert("上傳失敗")
 
     }
-
-    text.style.display =
-    "block"
-
-    setTimeout(() => {
-
-        text.style.display =
-        "none"
-
-    },1000)
 
 })
 
-/* =========================
-按讚
-========================= */
-async function likeVideo(
-id,
-el
-){
+// ======================
+// 按讚
+// ======================
 
-    const res =
-    await fetch(
-        "/api/like/"+id
-    )
+async function likeVideo(id){
+
+    const r =
+    await fetch("/api/like/"+id)
 
     const data =
-    await res.json()
+    await r.json()
 
-    el.innerHTML = `
-    ❤️
-    <div>${data.likes}</div>
-    `
-
-}
-
-/* =========================
-留言
-========================= */
-async function sendComment(id){
-
-    const input =
     document.getElementById(
-        "comment-"+id
-    )
-
-    const text =
-    input.value
-
-    if(!text) return
-
-    await fetch(
-        "/api/comment/"+id,
-        {
-            method:"POST",
-
-            headers:{
-                "Content-Type":
-                "application/json"
-            },
-
-            body:JSON.stringify({
-                text:text
-            })
-        }
-    )
-
-    input.value = ""
-
-    alert("留言成功")
+        "like-"+id
+    ).innerHTML = data.likes
 
 }
-
-/* =========================
-分享
-========================= */
-function shareVideo(id){
-
-    const url =
-    location.origin+
-    "/video/"+id
-
-    navigator.clipboard
-    .writeText(url)
-
-    alert("已複製分享連結")
-
-}
-
-/* =========================
-刪除影片
-========================= */
-async function deleteVideo(id){
-
-    if(!confirm("確定刪除？"))
-    return
-
-    await fetch(
-        "/api/delete/"+id
-    )
-
-    loadVideos()
-
-}
-
-/* =========================
-上傳影片
-========================= */
-async function uploadVideo(){
-
-    const file =
-    document.getElementById(
-        "uploadVideo"
-    ).files[0]
-
-    if(!file){
-
-        alert("請選影片")
-
-        return
-    }
-
-    const form =
-    new FormData()
-
-    form.append(
-        "video",
-        file
-    )
-
-    const res =
-    await fetch(
-        "/api/upload",
-        {
-            method:"POST",
-
-            body:form
-        }
-    )
-
-    const data =
-    await res.json()
-
-    if(data.ok){
-
-        alert("上傳成功")
-
-        loadVideos()
-
-    }else{
-
-        alert(data.error)
-
-    }
-
-}
-
-/* =========================
-初始化
-========================= */
-loadVideos()
 
 </script>
 
