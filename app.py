@@ -105,11 +105,17 @@ def videos():
 
     cur = conn.cursor()
 
-    cur.execute("""
-    SELECT id,title,video_url,likes
-    FROM videos
-    ORDER BY id DESC
-    """)
+    cur.execute(
+    """
+    INSERT INTO videos
+    (title,video_url)
+    VALUES (?,?)
+    """,
+    (
+        filename,
+        db_path
+    )
+)
 
     rows = cur.fetchall()
 
@@ -177,7 +183,7 @@ def upload():
             filename
         )
 
-       
+        db_path = "videos/" + filename
 
         # DB
         conn = db()
