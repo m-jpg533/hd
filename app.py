@@ -136,7 +136,6 @@ def videos():
 # =========================
 # 上傳影片
 # =========================
-
 @app.route("/api/upload", methods=["POST"])
 def upload():
 
@@ -173,19 +172,12 @@ def upload():
 
         filename = secure_filename(filename)
 
-        # 建立資料夾
-        os.makedirs(
-            app.config["UPLOAD_FOLDER"],
-            exist_ok=True
-        )
-
         path = os.path.join(
             app.config["UPLOAD_FOLDER"],
             filename
         )
 
-        # 儲存影片
-        file.save(path)
+       
 
         # DB
         conn = db()
