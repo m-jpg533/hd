@@ -1,8 +1,9 @@
+```python
 from flask import Flask, request, jsonify, render_template
 import sqlite3
 import os
-import html
 import uuid
+import html
 
 from werkzeug.utils import secure_filename
 
@@ -12,11 +13,21 @@ app = Flask(__name__)
 # 設定
 # =========================
 
-app.config["MAX_CONTENT_LENGTH"] = 500 * 1024 * 1024
+BASE_DIR = os.path.dirname(
+    os.path.abspath(__file__)
+)
 
-UPLOAD_FOLDER = "static/videos"
+UPLOAD_FOLDER = os.path.join(
+    BASE_DIR,
+    "static",
+    "videos"
+)
 
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+
+app.config["MAX_CONTENT_LENGTH"] = (
+    500 * 1024 * 1024
+)
 
 ALLOWED_EXTENSIONS = {
     "mp4",
@@ -25,16 +36,14 @@ ALLOWED_EXTENSIONS = {
 }
 
 # 建立資料夾
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
+os.makedirs(
+    app.config["UPLOAD_FOLDER"],
+    exist_ok=True
+)
 
 # =========================
 # DB
 # =========================
-
-BASE_DIR = os.path.dirname(
-    os.path.abspath(__file__)
-)
 
 DB_PATH = os.path.join(
     BASE_DIR,
@@ -43,7 +52,9 @@ DB_PATH = os.path.join(
 
 def db():
 
-    return sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH)
+
+    return conn
 
 # =========================
 # 初始化 DB
@@ -56,17 +67,29 @@ def init_db():
     cur = conn.cursor()
 
     cur.execute("""
-    CREATE TABLE IF NOT EXISTS videos (
+        CREATE TABLE IF NOT EXISTS videos (
 
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-        title TEXT,
+            title TEXT,
 
-        video_url TEXT,
+            video_url TEXT,
 
-        likes INTEGER DEFAULT 0
+            likes INTEGER DEFAULT 0
 
-    )
+        )
+    """)
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS comments (
+
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+            video_id INTEGER,
+
+            text TEXT
+
+        )
     """)
 
     conn.commit()
@@ -76,14 +99,17 @@ def init_db():
 init_db()
 
 # =========================
-# 檢查副檔名
+# 副檔名檢查
 # =========================
 
 def allowed_file(filename):
 
-    return "." in filename and \
-    filename.rsplit(".",1)[1].lower() \
-    in ALLOWED_EXTENSIONS
+    return (
+        "." in filename
+        and
+        filename.rsplit(".",1)[1].lower()
+        in ALLOWED_EXTENSIONS
+    )
 
 # =========================
 # 首頁
@@ -92,55 +118,69 @@ def allowed_file(filename):
 @app.route("/")
 def home():
 
-    return render_template("index.html")
+    return render_template(
+        "index.html"
+    )
 
 # =========================
-# API 影片
+# 取得影片
 # =========================
 
 @app.route("/api/videos")
 def videos():
 
-    conn = db()
+    try:
 
-    cur = conn.cursor()
+        conn = db()
 
-    cur.execute("""
-        SELECT id, title, video_url, likes
-        FROM videos
-        ORDER BY id DESC
-    """)
+        cur = conn.cursor()
 
-    rows = cur.fetchall()
+        cur.execute("""
+            SELECT
+                id,
+                title,
+                video_url,
+                likes
+            FROM videos
+            ORDER BY id DESC
+        """)
 
-    conn.close()
+        rows = cur.fetchall()
 
-    data = []
+        conn.close()
 
-    for r in rows:
+        data = []
 
-        data.append({
+        for r in rows:
 
-            "id": r[0],
+            data.append({
 
-            "title": r[1],
+                "id": r[0],
 
-            "url": "/" + r[2],
+                "title": r[1],
 
-            "likes": r[3]
+                "url": "/" + r[2],
 
-        })
+                "likes": r[3]
 
-    return jsonify(data)
+            })
 
+        return jsonify(data)
 
+    except Exception as e:
 
-
+        return jsonify({
+            "error": str(e)
+        }),500
 
 # =========================
 # 上傳影片
 # =========================
-@app.route("/api/upload", methods=["POST"])
+
+@app.route(
+    "/api/upload",
+    methods=["POST"]
+)
 def upload():
 
     try:
@@ -165,7 +205,6 @@ def upload():
                 "error":"只允許 mp4/mov/webm"
             }),400
 
-        # 安全檔名
         ext = file.filename.rsplit(".",1)[1]
 
         filename = (
@@ -174,16 +213,25 @@ def upload():
             + ext
         )
 
-        filename = secure_filename(filename)
+        filename = secure_filename(
+            filename
+        )
 
-        path = os.path.join(
+        save_path = os.path.join(
             app.config["UPLOAD_FOLDER"],
             filename
         )
 
-        db_path = "videos/" + filename
+        file.save(save_path)
 
-        # DB
+        print("SAVE:", save_path)
+
+        # DB只存相對路徑
+        video_url = (
+            "static/videos/"
+            + filename
+        )
+
         conn = db()
 
         cur = conn.cursor()
@@ -191,12 +239,12 @@ def upload():
         cur.execute(
             """
             INSERT INTO videos
-            (title,video_url)
+            (title, video_url)
             VALUES (?,?)
             """,
             (
                 filename,
-                path
+                video_url
             )
         )
 
@@ -209,8 +257,6 @@ def upload():
         })
 
     except Exception as e:
-
-        print(e)
 
         return jsonify({
             "error":str(e)
@@ -256,6 +302,128 @@ def like(id):
     })
 
 # =========================
+# 留言
+# =========================
+
+@app.route(
+    "/api/comment/<int:id>",
+    methods=["POST"]
+)
+def comment(id):
+
+    text = html.escape(
+        request.json["text"]
+    )
+
+    conn = db()
+
+    cur = conn.cursor()
+
+    cur.execute(
+        """
+        INSERT INTO comments
+        (video_id,text)
+        VALUES (?,?)
+        """,
+        (
+            id,
+            text
+        )
+    )
+
+    conn.commit()
+
+    conn.close()
+
+    return jsonify({
+        "ok":True
+    })
+
+# =========================
+# 取得留言
+# =========================
+
+@app.route("/api/comments/<int:id>")
+def comments(id):
+
+    conn = db()
+
+    cur = conn.cursor()
+
+    cur.execute(
+        """
+        SELECT text
+        FROM comments
+        WHERE video_id=?
+        ORDER BY id DESC
+        """,
+        (id,)
+    )
+
+    rows = cur.fetchall()
+
+    conn.close()
+
+    data = []
+
+    for r in rows:
+
+        data.append(r[0])
+
+    return jsonify(data)
+
+# =========================
+# 刪除影片
+# =========================
+
+@app.route("/api/delete/<int:id>")
+def delete(id):
+
+    conn = db()
+
+    cur = conn.cursor()
+
+    cur.execute(
+        """
+        SELECT video_url
+        FROM videos
+        WHERE id=?
+        """,
+        (id,)
+    )
+
+    row = cur.fetchone()
+
+    if row:
+
+        path = row[0]
+
+        full_path = os.path.join(
+            BASE_DIR,
+            path
+        )
+
+        if os.path.exists(full_path):
+
+            os.remove(full_path)
+
+        cur.execute(
+            """
+            DELETE FROM videos
+            WHERE id=?
+            """,
+            (id,)
+        )
+
+        conn.commit()
+
+    conn.close()
+
+    return jsonify({
+        "ok":True
+    })
+
+# =========================
 # 啟動
 # =========================
 
@@ -264,5 +432,7 @@ if __name__ == "__main__":
     app.run(
         host="0.0.0.0",
         port=5024,
-        debug=False
+        debug=True
     )
+```
+
