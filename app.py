@@ -105,17 +105,11 @@ def videos():
 
     cur = conn.cursor()
 
-    cur.execute(
-    """
-    INSERT INTO videos
-    (title,video_url)
-    VALUES (?,?)
-    """,
-    (
-        filename,
-        db_path
-    )
-)
+    cur.execute("""
+        SELECT id, title, video_url, likes
+        FROM videos
+        ORDER BY id DESC
+    """)
 
     rows = cur.fetchall()
 
@@ -138,6 +132,10 @@ def videos():
         })
 
     return jsonify(data)
+
+
+
+
 
 # =========================
 # 上傳影片
